@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+<xsd:element name="root">
+<xsd:complexType>
+<xsd:sequence minOccurs="1" maxOccurs="1">
+<xsd:element name="course" minOccurs="0" maxOccurs="unbounded">
+<xsd:complexType>
+<xsd:sequence minOccurs="1" maxOccurs="1">
+<xsd:element name="reg_num" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="subj" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="crse" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="sect" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="title" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="units" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="instructor" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="days" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="time" minOccurs="1" maxOccurs="1">
+<xsd:complexType>
+<xsd:sequence minOccurs="1" maxOccurs="1">
+<xsd:element name="start_time" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="end_time" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+</xsd:sequence>
+</xsd:complexType>
+</xsd:element>
+<xsd:element name="place" minOccurs="1" maxOccurs="1">
+<xsd:complexType>
+<xsd:sequence minOccurs="1" maxOccurs="1">
+<xsd:element name="building" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+<xsd:element name="room" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+</xsd:sequence>
+</xsd:complexType>
+</xsd:element>
+</xsd:sequence>
+</xsd:complexType>
+</xsd:element>
+</xsd:sequence>
+</xsd:complexType>
+</xsd:element>
+</xsd:schema>
