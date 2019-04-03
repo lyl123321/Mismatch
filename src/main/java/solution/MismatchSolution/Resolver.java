@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
@@ -93,9 +95,8 @@ public class Resolver {
 						if(contain(exLable, rExLable)) {
 							//避免对相同的 vlcai 进行重复的 QuerySuggester 运算 
 							if(vlcais.indexOf(vlcai) >= 0) break;
-							System.out.println("vlcai: " + vlcai);
 							vlcais.add(vlcai);
-							QuerySuggester(vlcai, nodes, suggestedQueries);
+							QuerySuggester(vlcai, vlcaLen, nodes, suggestedQueries);
 						}
 					}
     			}
@@ -119,53 +120,117 @@ public class Resolver {
 						int[] exLable = replaceTable.getIndex(vlcai).getExLabel();
 						if(contain(exLable, rExLable)) {
 							if(vlcais.indexOf(vlcai) >= 0) break;
-							System.out.println("vlcai: " + vlcai);
 							vlcais.add(vlcai);
-							QuerySuggester(vlcai, nodes, suggestedQueries);
+							QuerySuggester(vlcai, vlcaLen, nodes, suggestedQueries);
 						}
 					}
     			}
 			}
         }
     	
+    	sort(suggestedQueries);
     	return suggestedQueries;
     }
 	
 	//Algorithm 2
-	private void QuerySuggester(String vlcai, String[] nodes, ArrayList<HashMap> sugQueries) {
+	private void QuerySuggester(String vlcai, int vlcaLen, String[] nodes, ArrayList<HashMap> sugQueries) {
 		int len = nodes.length;
-		int count = 1;
-		HashMap sugQuery = new HashMap();
-		HashMap expResult = new HashMap();
+		boolean[] bool = new boolean[len];
 		String[][] replace = new String[len][];
-		expResult.put("vlca", vlcai);
 		
 		for (int i = 0; i < len; i++) {
 			String node = nodes[i];
 			if(node.indexOf(vlcai) < 0) {
-				System.out.println("node: " + node);
 				String type = replaceTable.getIndex(node).getType();
 				replace[i] = replaceTable.getReplacement(vlcai, type);
+				bool[i] = true;
 			} else {
-				replace[i] = new String[1];
-				replace[i][0] = nodes[i];
+				replace[i] = new String[] {nodes[i]};
+				bool[i] = false;
 			}
 		}
-		
-		//建议查询的个数
-		for(String[] arr : replace) {
-			count *= arr.length;
-		}
 
-		//建议查询的结果中的节点
-		String[] expNodes = new String[count];
+		// 计算分数 score
+		double count = 0.0;
+		double dt = vlcai.split("\\.").length - vlcaLen;
+		double distSum = 0.0;
+		double e = 2.71828;
+		double score = 0.0;
+
+		for (int i = 0; i < len; i++) {
+			if(!bool[i]) continue;
+			String node = nodes[i];
+			String[] keywords = getKeywords(node);
+			count += keywords.length;
+			distSum += getDist(node, keywords);
+		}
 		
+		score = 1.0 / Math.pow(e, count) * (1.0 - 1.0 / Math.pow(e, dt)) * 1.0 / Math.pow(e, distSum);
 		
+		//各种可能的替换节点列表
+		ArrayList<ArrayList<String>> expNodesArray = multiCartesian(replace);
 		
-		expResult.put("nodes", vlcai);
+		for(ArrayList<String> expNodes : expNodesArray) {
+			String[] eNodes = expNodes.toArray(new String[0]);
+			ArrayList<String> query = new ArrayList<String>();
+			HashMap sugQuery = new HashMap();
+			HashMap expResult = new HashMap();
+
+			System.out.println(vlcai);//-------------
+			for(int i = 0; i < len; i++) {
+				String node = eNodes[i];
+				String subtree = subtreeTable.getIndex(node);
+				Pattern pattern = Pattern.compile("^<.+>[\\r\\n\\s]*([^\\r\\n\\s]+)[\\r\\n\\s]*<.+>");
+				Matcher matcher = pattern.matcher(subtree);
+				matcher.find();
+				String[] keywords = matcher.group(1).split(" ");
+				for (String keyword : keywords) {
+					query.add(keyword);
+				}
+				System.out.println(node);//-------------
+			}
+
+			System.out.println(score);//-------------
+			System.out.println(query);//-------------
+			
+			//添加查询
+			expResult.put("vlca", vlcai);
+			expResult.put("nodes", eNodes);
+			sugQuery.put("result", expResult);
+			sugQuery.put("query", query);
+			sugQuery.put("score", score);
+			sugQueries.add(sugQuery);
+		}
+	}
+	
+	//待测试
+	private ArrayList<ArrayList<String>> multiCartesian(String[][] arries) {
+		ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
 		
+		for(String a : arries[0]) {
+			ArrayList<String> temp = new ArrayList<String>();
+			temp.add(a);
+			res.add(temp);
+		}
 		
+		for (int i = 1, len = arries.length; i < len; i++) {
+			res = Cartesian(res, arries[i]);
+		}
 		
+		return res;
+	}
+	
+	private ArrayList<ArrayList<String>> Cartesian(ArrayList<ArrayList<String>> arries, String[] array) {
+		ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
+		
+       	for(ArrayList<String> arr : arries) {
+       		for(String a : array) {
+       			arr.add(a);
+       			res.add(arr);
+    		}
+		}
+       	
+       	return res;
 	}
 	
 	//Algorithm 3
@@ -237,6 +302,18 @@ public class Resolver {
 					if(iArr1[i] != iArr2[i]) return iArr1[i] - iArr2[i];
 				}
 				return len1 - len2;
+			}
+		});
+	}
+	
+	private void sort(ArrayList<HashMap> sugQueries) {
+		sugQueries.sort(new Comparator<HashMap>() {
+			@Override
+			public int compare(HashMap sugQuery1, HashMap sugQuery2) {
+				double score1 = (double)sugQuery1.get("score");
+				double score2 = (double)sugQuery2.get("score");
+				int sd = (int) ((score2 - score1) * 10000);
+				return sd;
 			}
 		});
 	}

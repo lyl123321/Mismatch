@@ -24,8 +24,7 @@ public class App {
         
         Resolver resolver = new Resolver(Q, R, τ, info);
         ArrayList<HashMap> suggestedQueries = resolver.resolve();
+        System.out.println(suggestedQueries);
         resolver.close();
-        
-        //ceshi
     }
 } 

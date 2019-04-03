@@ -90,13 +90,11 @@ public class ReplaceTable {
 			DatabaseEntry theData = new DatabaseEntry();
 			cursor.getSearchKey(theKey, theData, LockMode.DEFAULT);
 			String vlcaiDeweyID = new String(theKey.getData(), "UTF-8");
-	        System.out.println(type);
 			while (cursor.getNext(theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				String theDeweyID = new String(theKey.getData(), "UTF-8");
 		        String theType = dataBinding.entryToObject(theData).getType();
 		        if(theDeweyID.indexOf(vlcaiDeweyID) < 0) break;
 		        if(theType.contentEquals(type)) replaceNodes.add(theDeweyID);
-		        System.out.println(theDeweyID + " " + theType);
 			}
 		} catch (Exception e) {
 			// TODO: handle exception
