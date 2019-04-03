@@ -16,8 +16,8 @@ public class ReplaceTableComparator implements Comparator<byte[]> {
 			e.printStackTrace();
 		}
 		
-		String[] sArr1 = s1.trim().split("\\."),
-				 sArr2 = s2.trim().split("\\.");
+		String[] sArr1 = s1.split("\\."),
+				 sArr2 = s2.split("\\.");
 		int i = 0,
 			len1 = sArr1.length,
 			len2 = sArr2.length,
@@ -31,8 +31,8 @@ public class ReplaceTableComparator implements Comparator<byte[]> {
 			iArr2[i] = Integer.parseInt(sArr2[i]);
 		}
 		for(i = 0; i < len; i++) {
-			if(iArr1[i] != iArr2[i]) return iArr2[i] - iArr1[i];
+			if(iArr1[i] != iArr2[i]) return iArr1[i] - iArr2[i];
 		}
-		return len2 - len1;
+		return len1 - len2;
     }
 }

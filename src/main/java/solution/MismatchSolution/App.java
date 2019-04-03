@@ -23,7 +23,9 @@ public class App {
         HashMap info = parser.parse();
         
         Resolver resolver = new Resolver(Q, R, τ, info);
-        resolver.resolve();
+        ArrayList<HashMap> suggestedQueries = resolver.resolve();
         resolver.close();
+        
+        //ceshi
     }
 } 

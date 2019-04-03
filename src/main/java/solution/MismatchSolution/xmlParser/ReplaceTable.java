@@ -1,14 +1,18 @@
 package solution.MismatchSolution.xmlParser;
 
+import java.util.ArrayList;
+
 import com.sleepycat.bind.EntryBinding;
 import com.sleepycat.bind.serial.SerialBinding;
 import com.sleepycat.bind.serial.StoredClassCatalog;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.LockMode;
+import com.sleepycat.je.OperationStatus;
 
 public class ReplaceTable {
 	private Database myDatabase;
@@ -76,6 +80,30 @@ public class ReplaceTable {
 			// TODO: handle exception
 		}
 		return theNode;
+	}
+	
+	public String[] getReplacement(String vlcai, String type) {
+		ArrayList<String> replaceNodes = new ArrayList<String>();
+		Cursor cursor = myDatabase.openCursor(null, null);
+		try {
+			DatabaseEntry theKey = new DatabaseEntry(vlcai.getBytes("UTF-8"));
+			DatabaseEntry theData = new DatabaseEntry();
+			cursor.getSearchKey(theKey, theData, LockMode.DEFAULT);
+			String vlcaiDeweyID = new String(theKey.getData(), "UTF-8");
+	        System.out.println(type);
+			while (cursor.getNext(theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				String theDeweyID = new String(theKey.getData(), "UTF-8");
+		        String theType = dataBinding.entryToObject(theData).getType();
+		        if(theDeweyID.indexOf(vlcaiDeweyID) < 0) break;
+		        if(theType.contentEquals(type)) replaceNodes.add(theDeweyID);
+		        System.out.println(theDeweyID + " " + theType);
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+		} finally {
+			cursor.close();
+		}
+		return replaceNodes.toArray(new String[0]);
 	}
 	
 	public void closeReplaceTableDB() {

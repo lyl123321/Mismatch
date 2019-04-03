@@ -3,6 +3,7 @@ package solution.MismatchSolution;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +51,8 @@ public class Resolver {
 		setMaxContain("reed");
 	}
 	
-	public List<String[]> resolve() {
-		List<String[]> suggestedQueries = new ArrayList<String[]>();
+	public ArrayList<HashMap> resolve() {
+		ArrayList<HashMap> suggestedQueries = new ArrayList<HashMap>();
     	
     	//detector
     	for(Map r : R) {
@@ -67,24 +68,115 @@ public class Resolver {
     	
     	for(Map r : R) {
     		String vlca = (String)r.get("vlca");
-    		String vlcaType = replaceTable.getIndex(vlca).getType();
     		String[] nodes = (String[])r.get("nodes");
     		String targetType = getTNT(nodes);
+    		int len = nodes.length;
     		//Suggester
     		int[] rExLable = constructExlabel(nodes);
     		//Phase 1
+    		ArrayList<String> vlcais = new ArrayList<String>();
     		for(String node : nodes) {
     			String[] keywords = getKeywords(node);
-    			if(getDist(node, keywords) > τ) {
-    				int vlcaLen = vlca.split("\\.").length;
-    				String[] ids = node.split("\\.");
-    				int nodeLen = ids.length;
+    			if(getDist(node, keywords) < τ) continue;
+    			int vlcaLen = vlca.split("\\.").length;
+				String[] ids = node.split("\\.");
+				int nodeLen = ids.length;
+				for (int i = vlcaLen; i < nodeLen; i++) {
+					String vlcai = ids[0];
+					for (int j = 1; j <= i; j++) {
+						vlcai += "." + ids[j];
+					}
+					String vlcaiType = replaceTable.getIndex(vlcai).getType();
+					if (vlcaiType.contentEquals(targetType)) {
+						int[] exLable = replaceTable.getIndex(vlcai).getExLabel();
+						//如果 vlcai 的 exLable 包含 rExLable 
+						if(contain(exLable, rExLable)) {
+							//避免对相同的 vlcai 进行重复的 QuerySuggester 运算 
+							if(vlcais.indexOf(vlcai) >= 0) break;
+							System.out.println("vlcai: " + vlcai);
+							vlcais.add(vlcai);
+							QuerySuggester(vlcai, nodes, suggestedQueries);
+						}
+					}
     			}
     		}
+    		//Phase 2
+    		sort(nodes);
+    		for (int i = 0; i < len - 1; i++) {
+				String lca = getLCA(nodes[i], nodes[i + 1]);
+				String[] keywords = getKeywords(lca);
+				if(getDist(lca, keywords) < τ) continue;
+				int vlcaLen = vlca.split("\\.").length;
+				String[] ids = lca.split("\\.");
+				int nodeLen = ids.length;
+				for (int j = vlcaLen; j < nodeLen; j++) {
+					String vlcai = ids[0];
+					for (int k = 1; k <= j; k++) {
+						vlcai += "." + ids[k];
+					}
+					String vlcaiType = replaceTable.getIndex(vlcai).getType();
+					if (vlcaiType.contentEquals(targetType)) {
+						int[] exLable = replaceTable.getIndex(vlcai).getExLabel();
+						if(contain(exLable, rExLable)) {
+							if(vlcais.indexOf(vlcai) >= 0) break;
+							System.out.println("vlcai: " + vlcai);
+							vlcais.add(vlcai);
+							QuerySuggester(vlcai, nodes, suggestedQueries);
+						}
+					}
+    			}
+			}
         }
     	
     	return suggestedQueries;
     }
+	
+	//Algorithm 2
+	private void QuerySuggester(String vlcai, String[] nodes, ArrayList<HashMap> sugQueries) {
+		int len = nodes.length;
+		int count = 1;
+		HashMap sugQuery = new HashMap();
+		HashMap expResult = new HashMap();
+		String[][] replace = new String[len][];
+		expResult.put("vlca", vlcai);
+		
+		for (int i = 0; i < len; i++) {
+			String node = nodes[i];
+			if(node.indexOf(vlcai) < 0) {
+				System.out.println("node: " + node);
+				String type = replaceTable.getIndex(node).getType();
+				replace[i] = replaceTable.getReplacement(vlcai, type);
+			} else {
+				replace[i] = new String[1];
+				replace[i][0] = nodes[i];
+			}
+		}
+		
+		//建议查询的个数
+		for(String[] arr : replace) {
+			count *= arr.length;
+		}
+
+		//建议查询的结果中的节点
+		String[] expNodes = new String[count];
+		
+		
+		
+		expResult.put("nodes", vlcai);
+		
+		
+		
+	}
+	
+	//Algorithm 3
+	private boolean contain(int[] exLable1, int[] exLable2) {
+		int len = exLable1.length;
+		int[] temp = new int[len];
+		for (int i = 0; i < len; i++) {
+			temp[i] = exLable1[i] == 1 && exLable2[i] == 1 ? 1 : 0;
+		}
+		return Arrays.equals(exLable2, temp);
+	}
 	
 	//暂时 ok
 	private int[] constructExlabel(String[] nodes) {
@@ -117,11 +209,51 @@ public class Resolver {
 		double ft = Ft[typeList.indexOf(type)];
 		double ftK = invertedTable.getFtK(type, keywords);
 		double dist = 1.0 - ftK / ft + 1.0 / ft;
-		System.out.println(dist);
 		
 		iTable.closeInvertedTableDB();
     	
     	return dist;
+	}
+	
+	private void sort(String[] nodes) {
+		Arrays.sort(nodes, new Comparator<String>() {
+			@Override
+			public int compare(String node1, String node2) {
+				String[] sArr1 = node1.split("\\."),
+						 sArr2 = node2.split("\\.");
+				int i = 0,
+					len1 = sArr1.length,
+					len2 = sArr2.length,
+					len = len1 < len2 ? len1 : len2;
+				int[] iArr1 = new int[len1],
+					  iArr2 = new int[len2];
+				for(i = 0; i < len1; i++) {
+					iArr1[i] = Integer.parseInt(sArr1[i]);
+				}
+				for(i = 0; i < len2; i++) {
+					iArr2[i] = Integer.parseInt(sArr2[i]);
+				}
+				for(i = 0; i < len; i++) {
+					if(iArr1[i] != iArr2[i]) return iArr1[i] - iArr2[i];
+				}
+				return len1 - len2;
+			}
+		});
+	}
+	
+	private String getLCA(String node1, String node2) {
+		String[] ids1 = node1.split("\\.");
+		String[] ids2 = node2.split("\\.");
+		String lca = ids1[0];
+		int minLen = ids1.length < ids2.length ? ids1.length : ids2.length;
+		for (int i = 1; i < minLen; i++) {
+			if(ids1[i] == ids2[i]) {
+				lca += "." + ids1[i];
+			} else {
+				break;
+			}
+		}
+		return lca;
 	}
 	
 	//ok 

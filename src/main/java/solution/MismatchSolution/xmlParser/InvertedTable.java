@@ -2,6 +2,7 @@ package solution.MismatchSolution.xmlParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -81,29 +82,13 @@ public class InvertedTable {
 		
 	}
 	
-	/*public String getIndex(String type) {
-		String deweyID = "";
-		try {
-			DatabaseEntry theKey = new DatabaseEntry(type.getBytes("UTF-8"));
-			DatabaseEntry theData = new DatabaseEntry();
-			if (myDatabase.get(null, theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				deweyID = new String(theData.getData(), "UTF-8");
-			} else {
-				System.out.println("No record found for key '" + theKey + "'.");
-			}
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
-		return deweyID;
-	}*/
-	
 	//求 FtK， 首先取出K中每个关键字关于类型 t的 deweyID数组，然后找到长度最短的数组，遍历这个数组，依次判断其中每个deweyID是否在剩余的数组中也存在，count++,最后求得fkt
 	public int getFtK(String type, String[] K) {
 		int len = K.length;
 		ArrayList<ArrayList<String>> idArray = new ArrayList<ArrayList<String>>();
 		
 		for(int i = 0; i < len; i++) {
-			ArrayList<String> names = new ArrayList<String>(Arrays.asList(myDBName));
+			List<String> names = Arrays.asList(myDBName);
 			int index = names.indexOf("invertedTableDB_" + K[i]);
 			Database database = myDB[index];
 			Cursor cursor = database.openCursor(null, null);
@@ -111,9 +96,11 @@ public class InvertedTable {
 			try {
 				DatabaseEntry theKey = new DatabaseEntry(type.getBytes("UTF-8"));
 				DatabaseEntry theData = new DatabaseEntry();
-				while (cursor.getNext(theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				OperationStatus retVal = cursor.getSearchKey(theKey, theData, LockMode.DEFAULT);
+				while (retVal == OperationStatus.SUCCESS) {
 			        String deweyID = new String(theData.getData(), "UTF-8");
 			        deweyIDs.add(deweyID);
+			        retVal = cursor.getNextDup(theKey, theData, LockMode.DEFAULT);
 				}
 			} catch (Exception e) {
 				// TODO: handle exception
