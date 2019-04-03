@@ -126,12 +126,12 @@ public class InvertedTable {
 		
 		int len2 = idArray.size();
 		for(int i = 1; i < len2; i++) {
-			ArrayList<String> temp = idArray.get(i);
-			temp.retainAll(idArray.get(i - 1));
-			idArray.set(i, temp);
+			ArrayList<String> temp = idArray.get(0);
+			temp.retainAll(idArray.get(i));
+			idArray.set(0, temp);
 		}
 		
-		return idArray.get(len2 - 1).size();
+		return idArray.get(0).size();
 	}
 	
 	

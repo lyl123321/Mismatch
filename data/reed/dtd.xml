@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE reed SYSTEM "http://www.cs.washington.edu/research/projects/xmltk/xmldata/data/courses/reed.dtd">
+<!DOCTYPE reed SYSTEM "data/reed/reed.dtd">
 <root>
 <course>
 <reg_num></reg_num>

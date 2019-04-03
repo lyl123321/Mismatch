@@ -28,13 +28,11 @@ public class PreParse {
 		
 		String xml = "data/reed/reed.xml"; 
         String dtd = "data/reed/reed.dtd";
-        String dtdOnline = "http://www.cs.washington.edu/research/projects/xmltk/xmldata/data/courses/reed.dtd";
         String dtdxml = "data/reed/dtd.xml";
        
         /*
 		String xml = "data/dblp/dblp.xml"; 
         String dtd = "data/dblp/dblp.dtd";
-        String dtdOnline = "data/dblp/dblp.dtd";
         String dtdxml = "data/dblp/dtd.xml";
         */
         HashMap info = new HashMap();
@@ -52,7 +50,7 @@ public class PreParse {
       //将DTD转成XML
         try {
             PrintWriter output1 = new PrintWriter(dtdxml);
-            output1.print(docu.toXml(dtdOnline));
+            output1.print(docu.toXml(dtd));
             output1.close();
         } catch( Exception e ) {
         	System.err.println("ERROR: can not change dtd to xml");
