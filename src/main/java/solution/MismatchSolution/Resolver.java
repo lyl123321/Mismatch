@@ -56,7 +56,7 @@ public class Resolver {
 	public ArrayList<HashMap> resolve() {
 		ArrayList<HashMap> suggestedQueries = new ArrayList<HashMap>();
     	
-    	//detector
+    	//Detector
     	for(Map r : R) {
     		String vlca = (String)r.get("vlca");
     		String vlcaType = replaceTable.getIndex(vlca).getType();
@@ -68,19 +68,18 @@ public class Resolver {
     		}
         }
     	
+    	//Suggester
     	for(Map r : R) {
     		String vlca = (String)r.get("vlca");
+    		int vlcaLen = vlca.split("\\.").length;
     		String[] nodes = (String[])r.get("nodes");
     		String targetType = getTNT(nodes);
-    		int len = nodes.length;
-    		//Suggester
     		int[] rExLable = constructExlabel(nodes);
-    		//Phase 1
     		ArrayList<String> vlcais = new ArrayList<String>();
+    		//Phase 1
     		for(String node : nodes) {
     			String[] keywords = getKeywords(node);
     			if(getDist(node, keywords) < τ) continue;
-    			int vlcaLen = vlca.split("\\.").length;
 				String[] ids = node.split("\\.");
 				int nodeLen = ids.length;
 				for (int i = vlcaLen; i < nodeLen; i++) {
@@ -103,11 +102,10 @@ public class Resolver {
     		}
     		//Phase 2
     		sort(nodes);
-    		for (int i = 0; i < len - 1; i++) {
+    		for (int i = 0, len = nodes.length; i < len - 1; i++) {
 				String lca = getLCA(nodes[i], nodes[i + 1]);
 				String[] keywords = getKeywords(lca);
 				if(getDist(lca, keywords) < τ) continue;
-				int vlcaLen = vlca.split("\\.").length;
 				String[] ids = lca.split("\\.");
 				int nodeLen = ids.length;
 				for (int j = vlcaLen; j < nodeLen; j++) {
@@ -176,7 +174,7 @@ public class Resolver {
 			HashMap sugQuery = new HashMap();
 			HashMap expResult = new HashMap();
 
-			System.out.println(vlcai);//-------------
+			//System.out.println(vlcai);//-------------
 			for(int i = 0; i < len; i++) {
 				String node = eNodes[i];
 				String subtree = subtreeTable.getIndex(node);
@@ -187,11 +185,11 @@ public class Resolver {
 				for (String keyword : keywords) {
 					query.add(keyword);
 				}
-				System.out.println(node);//-------------
+				//System.out.println(node);//-------------
 			}
 
-			System.out.println(score);//-------------
-			System.out.println(query);//-------------
+			//System.out.println(score);//-------------
+			//System.out.println(query);//-------------
 			
 			//添加查询
 			expResult.put("vlca", vlcai);
@@ -203,83 +201,8 @@ public class Resolver {
 		}
 	}
 	
-	//待测试
-	private ArrayList<ArrayList<String>> multiCartesian(String[][] arries) {
-		ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
-		
-		for(String a : arries[0]) {
-			ArrayList<String> temp = new ArrayList<String>();
-			temp.add(a);
-			res.add(temp);
-		}
-		
-		for (int i = 1, len = arries.length; i < len; i++) {
-			res = Cartesian(res, arries[i]);
-		}
-		
-		return res;
-	}
-	
-	private ArrayList<ArrayList<String>> Cartesian(ArrayList<ArrayList<String>> arries, String[] array) {
-		ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
-		
-       	for(ArrayList<String> arr : arries) {
-       		for(String a : array) {
-       			arr.add(a);
-       			res.add(arr);
-    		}
-		}
-       	
-       	return res;
-	}
-	
-	//Algorithm 3
-	private boolean contain(int[] exLable1, int[] exLable2) {
-		int len = exLable1.length;
-		int[] temp = new int[len];
-		for (int i = 0; i < len; i++) {
-			temp[i] = exLable1[i] == 1 && exLable2[i] == 1 ? 1 : 0;
-		}
-		return Arrays.equals(exLable2, temp);
-	}
 	
 	//暂时 ok
-	private int[] constructExlabel(String[] nodes) {
-		int len = nodes.length;
-		int[] res = new int[typeList.size()];
-		for(int i = 0; i < len; i++) {
-			String type = replaceTable.getIndex(nodes[i]).getType();
-			res[typeList.indexOf(type)] = 1;
-		}
-		return res;
-	}
-	
-	private String[] getKeywords(String node) {
-		String subtree = subtreeTable.getIndex(node);
-		ArrayList<String> keywords = new ArrayList<String>();
-		for(int i = 0, len = Q.length; i < len; i++) {
-			String keyword = Q[i];
-			if(subtree.indexOf(keyword) >= 0) {
-				keywords.add(keyword);
-			}
-		}
-		return keywords.toArray(new String[0]);
-	}
-	
-	private double getDist(String node, String[] keywords) {
-		InvertedTable iTable = new InvertedTable();
-		iTable.openInvertedTableDB(myDbEnvironment, keywords);
-		
-		String type = replaceTable.getIndex(node).getType();
-		double ft = Ft[typeList.indexOf(type)];
-		double ftK = invertedTable.getFtK(type, keywords);
-		double dist = 1.0 - ftK / ft + 1.0 / ft;
-		
-		iTable.closeInvertedTableDB();
-    	
-    	return dist;
-	}
-	
 	private void sort(String[] nodes) {
 		Arrays.sort(nodes, new Comparator<String>() {
 			@Override
@@ -423,7 +346,82 @@ public class Resolver {
 		
 		return commonPath;
 	}
+
+	//为 mnodes 构造 exlable
+	private int[] constructExlabel(String[] nodes) {
+		int[] res = new int[typeList.size()];
+		for(String node : nodes) {
+			String type = replaceTable.getIndex(node).getType();
+			res[typeList.indexOf(type)] = 1;
+		}
+		return res;
+	}
+
+	//获取节点 node 匹配的查询关键字
+	private String[] getKeywords(String node) {
+		String subtree = subtreeTable.getIndex(node);
+		ArrayList<String> keywords = new ArrayList<String>();
+		for(String keyword : Q) {
+			if(subtree.indexOf(keyword) >= 0) {
+				keywords.add(keyword);
+			}
+		}
+		return keywords.toArray(new String[0]);
+	}
+
+	//根据节点 node 和它匹配的关键字 keywords 计算关键字对它的可区分性值
+	private double getDist(String node, String[] keywords) {
+		String type = replaceTable.getIndex(node).getType();
+		double ft = Ft[typeList.indexOf(type)];
+		double ftK = invertedTable.getFtK(type, keywords);
+		double dist = 1.0 - ftK / ft + 1.0 / ft;
+    	return dist;
+	}
+
+	//Algorithm 3, exLable1 是否包含 exLable2
+	private boolean contain(int[] exLable1, int[] exLable2) {
+		int len = exLable1.length;
+		int[] temp = new int[len];
+		for (int i = 0; i < len; i++) {
+			temp[i] = exLable1[i] == 1 && exLable2[i] == 1 ? 1 : 0;
+		}
+		return Arrays.equals(exLable2, temp);
+	}
+
+	//求多个数组的笛卡尔积
+	private ArrayList<ArrayList<String>> multiCartesian(String[][] arries) {
+		ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
+		
+		for(String a : arries[0]) {
+			ArrayList<String> temp = new ArrayList<String>();
+			temp.add(a);
+			res.add(temp);
+		}
+		
+		for (int i = 1, len = arries.length; i < len; i++) {
+			res = Cartesian(res, arries[i]);
+		}
+		
+		return res;
+	}
 	
+	private ArrayList<ArrayList<String>> Cartesian(ArrayList<ArrayList<String>> arries, String[] array) {
+		ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
+		
+       	for(ArrayList<String> arr : arries) {
+       		for(String a : array) {
+       			ArrayList<String> temp = new ArrayList<String>(arr);
+       			temp.add(a);
+       			res.add(temp);
+    		}
+		}
+       	
+       	return res;
+	}
+	
+	
+	
+	//手动设置 MaxContain
 	private void setMaxContain(String model) {
 		int len = typeList.size();
 		maxContain = new int[len][];
