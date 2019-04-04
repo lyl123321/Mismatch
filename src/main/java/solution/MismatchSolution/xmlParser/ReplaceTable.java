@@ -32,7 +32,7 @@ public class ReplaceTable {
 		    myClassDb = myDbEnvironment.openDatabase(null, "replaceTableNodeDB", dbConfig);
 		    StoredClassCatalog classCatalog = new StoredClassCatalog(myClassDb); 	//用来存储可序列化对象
 			dataBinding = new SerialBinding<ReplaceTableNode>(classCatalog, ReplaceTableNode.class);
-		    //使用自定义的key值比较器
+		    //使用自定义的 key 值比较器，以便用 getReplacement 获取替换节点
 		    dbConfig.setBtreeComparator(ReplaceTableComparator.class);
 		    dbConfig.setOverrideBtreeComparator(true);
 		    myDatabase = myDbEnvironment.openDatabase(null, "replaceTableDB", dbConfig);
@@ -89,11 +89,10 @@ public class ReplaceTable {
 			DatabaseEntry theKey = new DatabaseEntry(vlcai.getBytes("UTF-8"));
 			DatabaseEntry theData = new DatabaseEntry();
 			cursor.getSearchKey(theKey, theData, LockMode.DEFAULT);
-			String vlcaiDeweyID = new String(theKey.getData(), "UTF-8");
 			while (cursor.getNext(theKey, theData, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				String theDeweyID = new String(theKey.getData(), "UTF-8");
+				if(theDeweyID.indexOf(vlcai) < 0) break;
 		        String theType = dataBinding.entryToObject(theData).getType();
-		        if(theDeweyID.indexOf(vlcaiDeweyID) < 0) break;
 		        if(theType.contentEquals(type)) replaceNodes.add(theDeweyID);
 			}
 		} catch (Exception e) {

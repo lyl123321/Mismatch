@@ -1,7 +1,6 @@
 package solution.MismatchSolution;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,11 +11,19 @@ public class App {
         String[] Q = {"344", "Makley", "10:30AM", "BIOL"};
         //查询结果 R
         List<Map> R = new ArrayList<Map>();
+        
         Map r1 = new HashMap();
         r1.put("vlca", "0");
-        String[] M = {"0.1.2", "0.1.6", "0.1.8.0", "0.2.1"};
-        r1.put("nodes", M);
+        String[] M1 = {"0.1.2", "0.1.6", "0.1.8.0", "0.2.1"};
+        r1.put("nodes", M1);
+        
+        Map r2 = new HashMap();
+        r2.put("vlca", "0");
+        String[] M2 = {"0.1.2", "0.1.6", "0.1.8.0", "0.2.1"};
+        r2.put("nodes", M2);
+
         R.add(r1);
+        R.add(r2);
         //阈值
         double τ = 0.9;
         
@@ -25,12 +32,16 @@ public class App {
         
         Resolver resolver = new Resolver(Q, R, τ, info);
         ArrayList<HashMap> suggestedQueries = resolver.resolve();
+        for (HashMap sugQuery : suggestedQueries) {
+        	System.out.println(sugQuery);
+		}
         resolver.close();
-        //测试
+        
+        /*测试
         String[][] arries = new String[3][];
-        String[] a1 = {"0.1.2", "0.1.6", "0.1.8.0", "0.2.1"};
-        String[] a2 = {"0.1.2", "0.1.6", "0.1.8.0"};
-        String[] a3 = {"0.1.2", "0.1.6", "0.2.1"};
+        String[] a1 = {"0.1.6", "0.1.8.0", "0.1.2", "0.2.1"};
+        String[] a2 = {"0.1.2", "0.1.6", "0.1.8.0", "0"};
+        String[] a3 = {"0.1.2", "0.4", "0.1.6", "0.2.1"};
         arries[0] = a1;
         arries[1] = a2;
         arries[2] = a3;
@@ -42,5 +53,6 @@ public class App {
         idArray.add(arr1);
         idArray.add(arr2);
         idArray.add(arr3);
+        */
     }
 } 

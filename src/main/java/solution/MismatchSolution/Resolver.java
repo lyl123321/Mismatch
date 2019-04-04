@@ -174,100 +174,42 @@ public class Resolver {
 			HashMap sugQuery = new HashMap();
 			HashMap expResult = new HashMap();
 
-			//System.out.println(vlcai);//-------------
 			for(int i = 0; i < len; i++) {
 				String node = eNodes[i];
 				String subtree = subtreeTable.getIndex(node);
-				Pattern pattern = Pattern.compile("^<.+>[\\r\\n\\s]*([^\\r\\n\\s]+)[\\r\\n\\s]*<.+>");
+				//正则表达式还得好好考虑---------------------------------------------------------------------------
+				Pattern pattern = Pattern.compile("<.+>[\\r\\n\\s]*([^\\r\\n\\s]+)[\\r\\n\\s]*<.+>");
 				Matcher matcher = pattern.matcher(subtree);
 				matcher.find();
 				String[] keywords = matcher.group(1).split(" ");
 				for (String keyword : keywords) {
 					query.add(keyword);
 				}
-				//System.out.println(node);//-------------
 			}
-
-			//System.out.println(score);//-------------
-			//System.out.println(query);//-------------
 			
-			//添加查询
+			//添加查询 sugQuery 到 sugQueries 中
 			expResult.put("vlca", vlcai);
-			expResult.put("nodes", eNodes);
+			//expResult.put("nodes", eNodes); 数组形式
+			expResult.put("nodes", Arrays.toString(eNodes));
 			sugQuery.put("result", expResult);
+			//sugQuery.put("query", query.toArray(new String[0])); 数组形式
 			sugQuery.put("query", query);
 			sugQuery.put("score", score);
 			sugQueries.add(sugQuery);
 		}
 	}
 	
-	
-	//暂时 ok
-	private void sort(String[] nodes) {
-		Arrays.sort(nodes, new Comparator<String>() {
-			@Override
-			public int compare(String node1, String node2) {
-				String[] sArr1 = node1.split("\\."),
-						 sArr2 = node2.split("\\.");
-				int i = 0,
-					len1 = sArr1.length,
-					len2 = sArr2.length,
-					len = len1 < len2 ? len1 : len2;
-				int[] iArr1 = new int[len1],
-					  iArr2 = new int[len2];
-				for(i = 0; i < len1; i++) {
-					iArr1[i] = Integer.parseInt(sArr1[i]);
-				}
-				for(i = 0; i < len2; i++) {
-					iArr2[i] = Integer.parseInt(sArr2[i]);
-				}
-				for(i = 0; i < len; i++) {
-					if(iArr1[i] != iArr2[i]) return iArr1[i] - iArr2[i];
-				}
-				return len1 - len2;
-			}
-		});
-	}
-	
-	private void sort(ArrayList<HashMap> sugQueries) {
-		sugQueries.sort(new Comparator<HashMap>() {
-			@Override
-			public int compare(HashMap sugQuery1, HashMap sugQuery2) {
-				double score1 = (double)sugQuery1.get("score");
-				double score2 = (double)sugQuery2.get("score");
-				int sd = (int) ((score2 - score1) * 10000);
-				return sd;
-			}
-		});
-	}
-	
-	private String getLCA(String node1, String node2) {
-		String[] ids1 = node1.split("\\.");
-		String[] ids2 = node2.split("\\.");
-		String lca = ids1[0];
-		int minLen = ids1.length < ids2.length ? ids1.length : ids2.length;
-		for (int i = 1; i < minLen; i++) {
-			if(ids1[i] == ids2[i]) {
-				lca += "." + ids1[i];
-			} else {
-				break;
-			}
-		}
-		return lca;
-	}
-	
-	//ok 
+	//根据 mnodes 获取目标节点类型 tnt
 	private String getTNT(String[] nodes) {
 		int len = nodes.length;
-		//m1 到 mn 中 ti 类型的不同关键字匹配节点的数量
-		int[] count = new int [len];
+		int[] count = new int [len];	//m1 到 mn 中 ti 类型的不同关键字匹配节点的数量
 		String[] types = new String[len];
 		List<String> typesNoRe = new ArrayList<String>();
 		for(int i = 0; i < len; i++) {
 			types[i] = replaceTable.getIndex(nodes[i]).getType();
 		}
 		
-		//去重，计数
+		//去重，计算重复类型节点数
 		Arrays.fill(count, 1);
 		Arrays.sort(types);
 		typesNoRe.add(0, types[0]);
@@ -281,14 +223,8 @@ public class Resolver {
 		types = typesNoRe.toArray(new String[0]);
 		len = types.length;
 		
-		//获取每个 type 的 tag
-		String[][] arrays = new String[len][];
-		for(int i = 0; i < len; i++) {
-			arrays[i] = types[i].split("/");
-		}
-		
 		//获取 tnt
-		String[] commonPref = getCommonPref(arrays);
+		String[] commonPref = getCommonPref(types);
 		int cLen = commonPref.length;
 		for(int i = cLen - 1; i >= 0; i--) {
 			boolean b = true;
@@ -307,11 +243,16 @@ public class Resolver {
 	}
 	
 	//获取公共前缀
-	private String[] getCommonPref(String[][] arrays) {
-		int len = arrays.length;
-		int minLen = arrays[0].length;
+	private String[] getCommonPref(String[] types) {
 		List<String> commonPref = new ArrayList<String>();
 		
+		int len = types.length;
+		String[][] arrays = new String[len][];
+		for(int i = 0; i < len; i++) {
+			arrays[i] = types[i].split("/");
+		}
+		
+		int minLen = arrays[0].length;
 		for(int i = 1; i < len; i++) {
 			if(arrays[i].length < minLen) {
 				minLen = arrays[i].length;
@@ -327,24 +268,24 @@ public class Resolver {
 				break;
 			}
 			if(b) {
-				commonPref.add(i - 1, temp);
+				commonPref.add(temp);
 			} else {
 				break;
 			}
 		}
 		
-		String[] commonPath = commonPref.toArray(new String[0]);
-		int cLen = commonPath.length;
+		String[] commonPrefs = commonPref.toArray(new String[0]);
+		int cLen = commonPrefs.length;
 		
 		for (int i = cLen - 1; i >= 0; i--) {
 			String temp = "";
 			for(int j = 0; j <= i; j++) {
-				temp += "/" + commonPath[j];
+				temp += "/" + commonPrefs[j];
 			}
-			commonPath[i] = temp;
+			commonPrefs[i] = temp;
 		}
 		
-		return commonPath;
+		return commonPrefs;
 	}
 
 	//为 mnodes 构造 exlable
@@ -372,8 +313,8 @@ public class Resolver {
 	//根据节点 node 和它匹配的关键字 keywords 计算关键字对它的可区分性值
 	private double getDist(String node, String[] keywords) {
 		String type = replaceTable.getIndex(node).getType();
-		double ft = Ft[typeList.indexOf(type)];
-		double ftK = invertedTable.getFtK(type, keywords);
+		double ft = Ft[typeList.indexOf(type)] + 0.0;
+		double ftK = invertedTable.getFtK(type, keywords) + 0.0;
 		double dist = 1.0 - ftK / ft + 1.0 / ft;
     	return dist;
 	}
@@ -387,7 +328,63 @@ public class Resolver {
 		}
 		return Arrays.equals(exLable2, temp);
 	}
-
+	
+	//升序排列节点
+	private void sort(String[] nodes) {
+		Arrays.sort(nodes, new Comparator<String>() {
+			@Override
+			public int compare(String node1, String node2) {
+				String[] sArr1 = node1.split("\\."),
+						 sArr2 = node2.split("\\.");
+				int i = 0,
+					len1 = sArr1.length,
+					len2 = sArr2.length,
+					len = len1 < len2 ? len1 : len2;
+				int[] iArr1 = new int[len1],
+					  iArr2 = new int[len2];
+				for(i = 0; i < len1; i++) {
+					iArr1[i] = Integer.parseInt(sArr1[i]);
+				}
+				for(i = 0; i < len2; i++) {
+					iArr2[i] = Integer.parseInt(sArr2[i]);
+				}
+				for(i = 0; i < len; i++) {
+					if(iArr1[i] != iArr2[i]) return iArr1[i] - iArr2[i];
+				}
+				return len1 - len2;
+			}
+		});
+	}
+	
+	//按分数 score 降序排列查询
+	private void sort(ArrayList<HashMap> sugQueries) {
+		sugQueries.sort(new Comparator<HashMap>() {
+			@Override
+			public int compare(HashMap sugQuery1, HashMap sugQuery2) {
+				double score1 = (double)sugQuery1.get("score");
+				double score2 = (double)sugQuery2.get("score");
+				int sd = (int) ((score2 - score1) * 1E4);
+				return sd;
+			}
+		});
+	}
+	
+	//获取 node1 和 node2 的 LCA，ids1[i].contentEquals(ids2[i]) 而不是 ids1[i] == ids2[i]，引用类型 == 比较的是地址而不是内容
+    private String getLCA(String node1, String node2) {
+		String[] ids1 = node1.split("\\.");
+		String[] ids2 = node2.split("\\.");
+		String lca = ids1[0];
+		int minLen = ids1.length < ids2.length ? ids1.length : ids2.length;
+		for (int i = 1; i < minLen; i++) {
+			if(ids1[i].contentEquals(ids2[i])) {
+				lca += "." + ids1[i];
+			} else {
+				break;
+			}
+		}
+		return lca;
+	}
+    
 	//求多个数组的笛卡尔积
 	private ArrayList<ArrayList<String>> multiCartesian(String[][] arries) {
 		ArrayList<ArrayList<String>> res = new ArrayList<ArrayList<String>>();
@@ -418,7 +415,6 @@ public class Resolver {
        	
        	return res;
 	}
-	
 	
 	
 	//手动设置 MaxContain
